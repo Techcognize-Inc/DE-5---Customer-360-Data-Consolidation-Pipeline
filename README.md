@@ -1,4 +1,4 @@
-# DE-5 Customer 360 Data Consolidation Pipeline
+﻿# DE-5 Customer 360 Data Consolidation Pipeline
 
 ## Flow
 Faker source systems
