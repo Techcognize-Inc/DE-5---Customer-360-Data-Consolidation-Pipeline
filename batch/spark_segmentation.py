@@ -114,7 +114,16 @@ def main():
     update_watermark(spark, WATERMARK_TABLE_PATH, JOB_NAME, new_ts)
     print(f"[{JOB_NAME}] Watermark advanced to {new_ts}")
 
-    segmented_df.show(20, truncate=False)
+    # Log segment distribution only — no PII in logs
+    segment_counts = (
+        segmented_df.groupBy("segment")
+        .count()
+        .orderBy("segment")
+        .collect()
+    )
+    for row in segment_counts:
+        print(f"[{JOB_NAME}] Segment '{row['segment']}': {row['count']} customers")
+
     spark.stop()
 
 
