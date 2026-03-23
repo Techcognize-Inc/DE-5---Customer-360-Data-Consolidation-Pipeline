@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from config import (
     SPARK_MASTER, KAFKA_BOOTSTRAP_SERVERS, LOANS_TOPIC,
-    STAGING_LOANS_PATH, LOANS_CHECKPOINT
+    STAGING_LOANS_PATH, LOANS_CHECKPOINT, STREAM_WATERMARK_DELAY
 )
 from schemas import cdc_envelope_schema, loan_payload_schema
 
@@ -50,9 +50,10 @@ def main():
     )
 
     parsed_df = parse_stream(raw_df)
+    watermarked_df = parsed_df.withWatermark("event_time", STREAM_WATERMARK_DELAY).dropDuplicates(["event_id"])
 
     query = (
-        parsed_df.writeStream
+        watermarked_df.writeStream
         .format("delta")
         .outputMode("append")
         .option("checkpointLocation", LOANS_CHECKPOINT)

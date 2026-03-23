@@ -1,7 +1,6 @@
 import importlib
 
 import pytest
-from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
 
 
@@ -13,23 +12,6 @@ def load_module(candidates):
         except Exception as exc:
             last_error = exc
     raise last_error
-
-
-@pytest.fixture(scope="session")
-def spark(tmp_path_factory):
-    warehouse = str(tmp_path_factory.mktemp("spark_warehouse_entity"))
-    spark = (
-        SparkSession.builder
-        .master("local[1]")
-        .appName("pytest-entity-resolution")
-        .config("spark.ui.enabled", "false")
-        .config("spark.sql.shuffle.partitions", "1")
-        .config("spark.sql.warehouse.dir", warehouse)
-        .getOrCreate()
-    )
-    spark.sparkContext.setLogLevel("ERROR")
-    yield spark
-    spark.stop()
 
 
 def test_get_latest_record_keeps_only_most_recent(spark):
@@ -116,11 +98,52 @@ def test_entity_resolution_left_joins_preserve_customer_without_account_or_loan(
     assert rows["CUST-2"]["loan_id"] is None
 
 
-@pytest.mark.xfail(
-    reason="Current implementation resolves records only by exact customer_id. "
-           "It does not contain fuzzy/typo-based matching, so the >95% typo-resolution requirement is not implemented yet."
-)
-def test_typo_based_entity_resolution_requirement_placeholder():
-    # This test intentionally documents the current gap between requirement and implementation.
-    # Once fuzzy matching is implemented, replace this with a real assertion.
-    assert False
+def test_fuzzy_entity_resolution_assigns_shared_golden_id(spark):
+    """Customers with the same phone/email and near-identical names (edit
+    distance <= 2) should receive the same golden_customer_id.
+    Validates the levenshtein_udf + assign_golden_customer_id logic.
+    """
+    er_mod = load_module([
+        "batch.spark_entity_resolution",
+        "spark_entity_resolution",
+    ])
+
+    # CUST-A / CUST-B: same email & phone, "Jon Doe" vs "John Doe" (distance=1)
+    # CUST-C: entirely different contact info — must keep its own golden id
+    data = [
+        ("CUST-A", "2026-03-18 01:00:00", "Jon",  "Doe",   "jon.doe@test.com", "1112223333"),
+        ("CUST-B", "2026-03-18 01:00:00", "John", "Doe",   "jon.doe@test.com", "1112223333"),
+        ("CUST-C", "2026-03-18 01:00:00", "Jane", "Smith", "jane@other.com",   "9998887777"),
+    ]
+    df = spark.createDataFrame(
+        data, ["customer_id", "event_time", "first_name", "last_name", "email", "phone"]
+    )
+
+    result = er_mod.assign_golden_customer_id(df)
+    rows = {r["customer_id"]: r["golden_customer_id"] for r in result.collect()}
+
+    assert rows["CUST-A"] == rows["CUST-B"], (
+        f"Expected CUST-A and CUST-B to share a golden_customer_id, got: {rows}"
+    )
+    assert rows["CUST-C"] == "CUST-C", (
+        f"Expected CUST-C to keep its own golden_customer_id, got: {rows['CUST-C']}"
+    )
+
+
+def test_levenshtein_udf_computes_correct_distance(spark):
+    """Unit-test the levenshtein_udf directly."""
+    er_mod = load_module([
+        "batch.spark_entity_resolution",
+        "spark_entity_resolution",
+    ])
+    from pyspark.sql.functions import lit
+
+    udf_fn = er_mod.levenshtein_udf
+    df = spark.createDataFrame([("Jon Doe", "John Doe"), ("Alice", "Alice"), ("abc", "xyz")],
+                               ["s1", "s2"])
+    result = df.withColumn("dist", udf_fn("s1", "s2")).collect()
+    dist_map = {(r["s1"], r["s2"]): r["dist"] for r in result}
+
+    assert dist_map[("Jon Doe", "John Doe")] == 1   # insert 'h'
+    assert dist_map[("Alice", "Alice")] == 0         # identical
+    assert dist_map[("abc", "xyz")] == 3             # 3 substitutions

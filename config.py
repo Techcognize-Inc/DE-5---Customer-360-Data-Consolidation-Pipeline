@@ -8,6 +8,7 @@ POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
 
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:29092")
 SPARK_MASTER = os.getenv("SPARK_MASTER", "spark://spark-master:7077")
+STREAM_WATERMARK_DELAY = os.getenv("STREAM_WATERMARK_DELAY", "10 minutes")
 
 MASTER_DATA_PATH = os.getenv("MASTER_DATA_PATH", "./data/master/customers_master.csv")
 DELTA_BASE_PATH = os.getenv("DELTA_BASE_PATH", "./data/delta")
@@ -28,6 +29,7 @@ LOANS_CHECKPOINT = f"{CHECKPOINT_BASE_PATH}/loans"
 RESOLVED_CUSTOMERS_PATH = f"{DELTA_BASE_PATH}/resolved_customers"
 CUSTOMER_360_PATH = f"{DELTA_BASE_PATH}/customer_360"
 CUSTOMER_SEGMENTS_PATH = f"{DELTA_BASE_PATH}/customer_segments"
+WATERMARK_TABLE_PATH = f"{DELTA_BASE_PATH}/watermark_config"
 
 JDBC_URL = f"jdbc:postgresql://{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 

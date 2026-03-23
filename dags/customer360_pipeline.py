@@ -43,7 +43,13 @@ with DAG(
 
     ge_staging_validate = BashOperator(
         task_id="ge_staging_validate",
-        bash_command="cd /opt/project && echo 'GE validation passed (placeholder)'",
+        bash_command=(
+            "docker exec de5-spark-master bash -lc "
+            "\"mkdir -p /tmp/.ivy2 && "
+            "/opt/spark/bin/spark-submit "
+            f"{SPARK_CONF} "
+            "/opt/project/batch/ge_staging_validate.py\""
+        ),
     )
 
     spark_entity_resolution = BashOperator(
