@@ -15,9 +15,7 @@ SPARK_CONF = (
     "--conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension "
     "--conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog "
     "--conf spark.extraListeners=io.openlineage.spark.agent.OpenLineageSparkListener "
-    "--conf spark.openlineage.transport.type=http "
-    "--conf spark.openlineage.transport.url=http://marquez:5000 "
-    "--conf spark.openlineage.transport.endpoint=/api/v1/lineage "
+    "--conf spark.openlineage.transport.type=console "
     "--conf spark.openlineage.namespace=customer360"
 )
 
