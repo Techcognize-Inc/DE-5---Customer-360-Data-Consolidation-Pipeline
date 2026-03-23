@@ -175,6 +175,20 @@ services:
     ports:
       - "3000:3000"
 
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard/Dockerfile
+    image: customer360-dashboard:latest
+    container_name: de5-dashboard
+    depends_on:
+      - spark-master
+    working_dir: /opt/project
+    volumes:
+      - ./:/opt/project
+    ports:
+      - "8501:8501"
+
 volumes:
   de5_postgres_data:
   airflow_db_data:
