@@ -258,7 +258,7 @@ def main():
     update_watermark(spark, WATERMARK_TABLE_PATH, JOB_NAME, new_max_ts)
     print(f"[{JOB_NAME}] Watermark advanced to {new_max_ts}")
 
-    resolved_df.show(20, truncate=False)
+    print(f"[{JOB_NAME}] Output rows written: {resolved_df.count()}")
     spark.stop()
 
 

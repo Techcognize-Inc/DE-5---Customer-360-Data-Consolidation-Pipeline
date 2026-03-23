@@ -180,7 +180,7 @@ def main():
     update_watermark(spark, WATERMARK_TABLE_PATH, JOB_NAME, new_ts)
     print(f"[{JOB_NAME}] Watermark advanced to {new_ts}")
 
-    customer_360_df.show(20, truncate=False)
+    print(f"[{JOB_NAME}] Output rows written: {customer_360_df.count()}")
     spark.stop()
 
 
