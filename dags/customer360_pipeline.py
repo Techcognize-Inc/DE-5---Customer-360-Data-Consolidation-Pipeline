@@ -12,6 +12,8 @@ default_args = {
 SPARK_CONF = (
     "--packages io.delta:delta-spark_2.12:3.2.0,io.openlineage:openlineage-spark_2.12:1.30.1 "
     "--conf spark.jars.ivy=/tmp/.ivy2 "
+    "--conf spark.log.level=WARN "
+    "--conf spark.ui.showConsoleProgress=false "
     "--conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension "
     "--conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog "
     "--conf spark.extraListeners=io.openlineage.spark.agent.OpenLineageSparkListener "
